@@ -10,7 +10,7 @@ from datetime import datetime, timedelta
 from io import StringIO
 from pymongo import MongoClient
 from thumbor.storages import BaseStorage
-from tornado.concurrent import return_future
+from tornado import gen
 
 class Storage(BaseStorage):
 
@@ -75,52 +75,52 @@ class Storage(BaseStorage):
 
         return pasplitf
 
-    @return_future
-    def get_crypto(self, path, callback):
+    @gen.coroutine
+    def get_crypto(self, path):
         connection, db, storage = self.__conn__()
         tpath = self.truepath(path)
         pasplit = path.split("/")
         crypto = storage.find_one({'path': tpath})
-        callback(crypto.get('crypto') if crypto else None)
+        raise gen.Return(crypto.get('crypto') if crypto else None)
 
-    @return_future
-    def get_detector_data(self, path, callback):
+    @gen.coroutine
+    def get_detector_data(self, path):
         connection, db, storage = self.__conn__()
         pasplit = path.split("/")
         tpath = self.truepath(path)
         doc = storage.find_one({'path': tpath})
-        callback(doc.get('detector_data') if doc else None)
+        raise gen.Return(doc.get('detector_data') if doc else None)
 
-    @return_future
-    def get(self, path, callback):
+    @gen.coroutine
+    def get(self, path):
         connection, db, storage = self.__conn__()
         tpath = self.truepath(path)
         stored = storage.find_one({'path': tpath})
 
         if not stored:
-            callback(None)
+            raise gen.Return(None)
             return
         if self.__is_expired(stored):
             self.remove(path)
-            callback(None)
+            raise gen.Return(None)
             return
 
         fs = gridfs.GridFS(db)
 
         contents = fs.get(stored['file_id']).read()
 
-        callback(str(contents))
+        raise gen.Return(str(contents))
 
-    @return_future
-    def exists(self, path, callback):
+    @gen.coroutine
+    def exists(self, path):
         connection, db, storage = self.__conn__()
         tpath = self.truepath(path)
         stored = storage.find_one({'path': tpath})
 
         if not stored or self.__is_expired(stored):
-            callback(False)
+            raise gen.Return(False)
         else:
-            callback(True)
+            raise gen.Return(True)
 
     def remove(self, path):
         connection, db, storage = self.__conn__()
