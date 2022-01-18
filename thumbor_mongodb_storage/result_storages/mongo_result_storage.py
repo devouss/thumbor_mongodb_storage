@@ -6,7 +6,7 @@
 import time
 import urllib
 from datetime import datetime, timedelta
-from cStringIO import StringIO
+from io import StringIO
 from pymongo import MongoClient
 from thumbor.result_storages import BaseStorage
 from thumbor.utils import logger
